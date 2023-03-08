@@ -1,0 +1,47 @@
+let
+    Fonte = (data as date) as record =>
+        let
+            // Obtém a data do Domingo de Páscoa usando o "Anonymous Gregorian algorithm" (Fonte: https://en.wikipedia.org/wiki/Date_of_Easter)
+            fnPascoa = (y as number) as date =>
+                let
+                    a = Number.Mod(y, 19), 
+                    b = Number.RoundDown(y / 100), 
+                    c = Number.Mod(y, 100), 
+                    d = Number.RoundDown(b / 4), 
+                    e = Number.Mod(b, 4), 
+                    f = Number.RoundDown((b + 8) / 25), 
+                    g = Number.RoundDown((b - f + 1) / 3), 
+                    h = Number.Mod((19 * a + b - d - g + 15), 30), 
+                    i = Number.RoundDown(c / 4), 
+                    k = Number.Mod(c, 4), 
+                    l = Number.Mod((32 + 2 * e + 2 * i - h - k), 7), 
+                    m = Number.RoundDown((a + 11 * h + 22 * l) / 451), 
+                    n = Number.RoundDown((h + l - 7 * m + 114) / 31), 
+                    o = Number.Mod((h + l - 7 * m + 114), 31) + 1, 
+                    data = #date(y, n, o)
+                in
+                    data,             Ano = Date.Year(data),             /* FERIADOS FIXOS */             FeriadosFixos = {
+                [Data = #date(Ano, 01, 01), FeriadoNome = "Ano Novo", Feriado = true], 
+                [Data = #date(Ano, 04, 21), FeriadoNome = "Tiradentes", Feriado = true], 
+                [Data = #date(Ano, 05, 01), FeriadoNome = "Dia do Trabalho", Feriado = true], 
+                [Data = #date(Ano, 09, 07), FeriadoNome = "Dia da Independência", Feriado = true], 
+                [Data = #date(Ano, 10, 12), FeriadoNome = "Nossa Sra. Aparecida", Feriado = true], 
+                [Data = #date(Ano, 11, 02), FeriadoNome = "Finados", Feriado = true], 
+                [Data = #date(Ano, 11, 15), FeriadoNome = "Proclamação da República", Feriado = true], 
+                [Data = #date(Ano, 12, 25), FeriadoNome = "Natal", Feriado = true]
+            },             /* FERIADOS MÓVEIS */             Pascoa = fnPascoa(Ano),             FeriadosMoveis = {
+                [Data = Date.AddDays(Pascoa, - 47), FeriadoNome = "Carnaval", Feriado = true],  // 47 dias antes da páscoa                          
+                [Data = Date.AddDays(Pascoa, - 2), FeriadoNome = "Paixão de Cristo", Feriado = true],  // 2 dias antes da páscoa                           
+                [Data = Pascoa, FeriadoNome = "Domingo de Páscoa", Feriado = true], 
+                [Data = Date.AddDays(Pascoa, 60), FeriadoNome = "Corpus Christi", Feriado = true] // 60 dias após a páscoa                        
+            },             FiltraFeriado = List.Select(FeriadosFixos & FeriadosMoveis, each [Data] = data),             registroFeriado = 
+                if List.Count(FiltraFeriado) = 1 
+                then FiltraFeriado{0}
+                else
+                    [Data = data, FeriadoNome = null, Feriado = false], 
+                    FimSemana = Date.DayOfWeekName(data, Day.Monday) >= 5, 
+                    registroDiaSemana = [DiaSemana = Date.DayOfWeekName(data), FimSemana = FimSemana, DiaUtil = not FimSemana and not registroFeriado]
+        in
+            registroFeriado & registroDiaSemana
+in
+    Fonte
